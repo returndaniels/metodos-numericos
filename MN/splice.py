@@ -226,7 +226,7 @@ Y = np.array([1, 4, 9, 16, 25])
 coefficients, knots = spline_coefficients(X, Y)
 
 # Criar um DataFrame com os coeficientes
-letters = list(string.ascii_lowercase)[:len(coefficients)+1]
+letters = list(string.ascii_lowercase)[:len(coefficients[0])]
 df_coefficients = pd.DataFrame(coefficients, columns=letters)
 
 # Adicionar uma coluna para o intervalo dos nós correspondente
