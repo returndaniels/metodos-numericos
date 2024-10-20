@@ -224,8 +224,6 @@ Y = np.array([1, 4, 9, 16, 25])
 
 # Chamando sem especificar o grau, para spline de grau máximo
 coefficients, knots = spline_coefficients(X, Y)
-x_value = 2.5
-f_x = spline_evaluate(coefficients, knots, x_value)
 
 # Criar um DataFrame com os coeficientes
 letters = list(string.ascii_lowercase)[:len(coefficients)+1]
@@ -236,3 +234,19 @@ df_coefficients['Intervalo'] = [f'[{knots[i]}, {knots[i+1]}]' for i in range(len
 
 # Mostrar o DataFrame com os coeficientes e seus intervalos
 print(df_coefficients)
+
+# Calcular os valores de f_x para todo valor no intervalo de X (com passo 0.25)
+step = 0.25
+x_values = np.arange(X[0], X[-1] + step, step)
+f_x_values = [spline_evaluate(coefficients, knots, x) for x in x_values]
+
+# Plotar usando matplotlib
+plt.figure(figsize=(10, 6))
+plt.plot(X, Y, 'o', label='Dados originais')
+plt.plot(x_values, f_x_values, '-', label='Spline interpolada')
+plt.xlabel('X')
+plt.ylabel('f(X)')
+plt.legend()
+plt.title('Interpolação Spline')
+plt.grid(True)
+plt.show()
