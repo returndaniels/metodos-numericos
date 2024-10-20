@@ -1,5 +1,8 @@
+import string
+import pandas as pd
 import numpy as np
 from typing import List, Tuple, Callable, Union
+import matplotlib.pyplot as plt
 
 def gauss_elimination(A: np.ndarray, b: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     """
@@ -101,13 +104,55 @@ def calculate_coefficients(X: np.ndarray, Y: np.ndarray, M: np.ndarray, degree: 
     n = len(X) - 1
 
     for i in range(n):
-        a = Y[i]
-        b = (Y[i + 1] - Y[i]) / h[i] - (h[i] / (degree + 1)) * (2 * M[i] + M[i + 1])
-        c = M[i] / 2
-        d = (M[i + 1] - M[i]) / (degree * h[i])
-        coefficients.append((a, b, c, d))
+        coeffs = [0] * (degree + 1)
+        
+        coeffs[0] = Y[i] 
+
+        if degree >= 1:
+            coeffs[1] = (Y[i + 1] - Y[i]) / h[i] - (h[i] / (degree + 1)) * (2 * M[i] + M[i + 1])
+        
+        if degree >= 2:
+            coeffs[2] = M[i] / 2
+            
+        if degree >= 3:
+            coeffs[3] = (M[i + 1] - M[i]) / (degree * h[i])
+        
+        for j in range(4, degree + 1):
+            coeffs[j] = calculate_higher_degree_coeffs(X, Y, M, i, j, h[i], degree)
+
+        coefficients.append(tuple(coeffs))
 
     return coefficients
+
+def calculate_higher_degree_coeffs(X: np.ndarray, Y: np.ndarray, M: np.ndarray, i: int, j: int, h: float, degree: int) -> float:
+    """
+    Calcula coeficientes para graus maiores que 3 utilizando diferenças divididas.
+
+    Args:
+        X (ndarray): Vetor dos nós.
+        Y (ndarray): Vetor dos valores nos nós.
+        M (ndarray): Vetor de derivadas.
+        i (int): Índice do nó atual.
+        j (int): Grau do coeficiente a ser calculado.
+        h (float): Distância entre os nós.
+        degree (int): Grau da spline.
+
+    Returns:
+        float: Valor do coeficiente calculado.
+    """
+    if j > degree or j < 0:
+        return 0.0  # Se o grau solicitado é inválido, retorna zero
+
+    if j == degree:
+        # Caso do maior grau, utilize M e Y para cálculo
+        return M[i] / (degree + 1)
+
+    # Caso para calcular os coeficientes utilizando diferenças divididas
+    term = 0
+    for k in range(j + 1):
+        term += ((-1) ** (j - k)) * (M[i + k] if (i + k < len(M)) else 0) / (np.math.factorial(k) * h**(j - k))
+
+    return term
 
 def spline_coefficients(X: np.ndarray, Y: np.ndarray, degree: Union[int, None] = None, 
                         precision_type: np.dtype = np.float64, 
@@ -174,13 +219,20 @@ def spline_evaluate(coefficients: List[Tuple[float]], knots: np.ndarray, x: floa
     return None
 
 # Exemplo de uso
-X = np.array([1, 2, 3, 4])
-Y = np.array([1, 4, 9, 16])
+X = np.array([1, 2, 3, 4, 5])
+Y = np.array([1, 4, 9, 16, 25])
 
 # Chamando sem especificar o grau, para spline de grau máximo
 coefficients, knots = spline_coefficients(X, Y)
 x_value = 2.5
 f_x = spline_evaluate(coefficients, knots, x_value)
 
-print("Coeficientes: ", coefficients)
-print(f"Spline avaliada em x={x_value}: {f_x}")
+# Criar um DataFrame com os coeficientes
+letters = list(string.ascii_lowercase)[:len(coefficients)+1]
+df_coefficients = pd.DataFrame(coefficients, columns=letters)
+
+# Adicionar uma coluna para o intervalo dos nós correspondente
+df_coefficients['Intervalo'] = [f'[{knots[i]}, {knots[i+1]}]' for i in range(len(knots)-1)]
+
+# Mostrar o DataFrame com os coeficientes e seus intervalos
+print(df_coefficients)
